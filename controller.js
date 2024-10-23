@@ -2,42 +2,44 @@ import Owner from "./ownerSchema.js";
 import Shop from "./shopSchema.js";
 import OwnerShop from "./ownerShopSchema.js";
 import mongoose from "mongoose";
-// import bcrypt from 'bcrypt';
 
+const checkID = (id)=>{
+  return mongoose.Types.ObjectId.isValid(id)
+}
+
+export default  {
 //-------------------------------------------Owner
-const addOwner = async (req, res) => {
-    const {name,email} = req.body;
+   addOwner : async (req, res) => {
+    const {name,email,password} = req.body;
     try {
-       const saltRounds = 10;
-       const password = await bcrypt.hash(req.body.password,saltRounds);
        const owner = new Owner({name,email,password});
        await owner.save();
       res.status(201).json(owner);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
-  }
-
-const showOwners = async (req,res) => {
+  },
+  showOwners : async (req,res) => {
     try {
         const getOwners = await Owner.find({});
         return res.json(getOwners);
     } catch (error) {
         res.send(error.message);
     }
-}
-
-const showSingleOwner = async (req, res) => {
+   },
+showSingleOwner : async (req, res) => {
   const { ownerId } = req.params;
   try {
+    if(!checkID(ownerId)){
+      return res.json({success:false,message:'404 Not Found Invalid ID'});
+    }
     const getOwner = await Owner.findById(ownerId);
-    return res.json(getOwner);
+    res.json(getOwner);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
-
-const deleteOwner = async (req,res)=>{
+},
+deleteOwner : async (req,res)=>{
   const { ownerId } = req.params;
   try {
     const deleteOwner = await Owner.findByIdAndDelete(ownerId);
@@ -45,19 +47,22 @@ const deleteOwner = async (req,res)=>{
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
-const showOwnerShops = async (req,res)=>{
+},
+showOwnerShops : async (req,res)=>{
   const {ownerId} = req.params;
   try {
   const ownerShops = await OwnerShop.find({ ownerId }).populate('shopId');
   const shops = ownerShops.map(os => os.shopId);
-  res.status(200).json(shops);
+  if(shops && shops.length>0){
+  return res.status(200).json(shops);
+  }
+  res.json({success:false, message:'404 Not Found'})
   } catch (error) {
       res.send(error.message);
   }
-}
+},
 //---------------------------------------------------Shops
-const addShops = async (req,res)=>{
+addShops : async (req,res)=>{
     const {name,address} = req.body;
     try {
         const shop = new Shop({name,address});
@@ -66,38 +71,41 @@ const addShops = async (req,res)=>{
     } catch (error) {
         res.send(error.message);
     }
-}
-
-const showShops = async (req,res) =>{
+},
+showShops : async (req,res) =>{
     try {
         const getShops = await Shop.find({});
         return res.json(getShops);
     } catch (error) {
         res.send(error.message);
     }
-}
-
-const showSingleShop = async (req,res)=>{
+},
+showSingleShop : async (req,res)=>{
 const {shopId} = req.params;
   try {
+    if(!checkID(shopId)){
+      return res.json({success:false,message:'404 Not Found Invalid ID'});
+    }
     const getShops = await Shop.findById(shopId);
-    return res.json(getShops);
+    res.json(getShops);
 } catch (error) {
     res.send(error.message);
 }
-}
-const showShopOwners = async (req,res) => {
+},
+showShopOwners : async (req,res) => {
   const { shopId } = req.params;
 try {
   const shopOwners = await OwnerShop.find({ shopId }).populate('ownerId');
   const owners = shopOwners.map(so => so.ownerId);
-  res.status(200).json(owners);
+  if(owners && owners.length>0){
+    return res.status(200).json(owners);
+    } 
+  res.json({success:false, message:'404 Not Found'})
 } catch (error) {
   res.status(400).json({ error: error.message });
 }
-}
-
-const deleteShop = async (req,res)=>{
+},
+deleteShop : async (req,res)=>{
   const {shopId} = req.params;
   try {
     const deleteShops = await Shop.findByIdAndDelete(shopId);
@@ -105,39 +113,43 @@ const deleteShop = async (req,res)=>{
 } catch (error) {
     res.send(error.message);
 }
-}
-
+},
 //---------------------------------------------Junction Schema
-const addOwnerShopIds = async (req,res)=>{
+purchaseShop : async (req,res)=>{
   const {ownerId,shopId} = req.body;
     try {
+        if(!checkID(ownerId) || !checkID(shopId)){
+         return res.json({success:false,message:'404 Not Found Invalid ID'});
+        }
         const ownershop = new OwnerShop({ownerId,shopId});
         await ownershop.save();
         res.json(ownershop);
     } catch (error) {
         res.send(error.message);
     }
-}
-
-const showOwnerShopIds = async (req,res)=>{
+},
+//----------------------------------------Showing all Owners along shops embeded in it
+getOwnersWithShops : async (req,res)=>{
   try {
-    const ownerShopIds = await OwnerShop.find();
-    res.json(ownerShopIds);
-} catch (error) {
-    res.send(error.message);
+    const owners = await Owner.find().lean();
+    for(let owner of owners){
+      owner.shops = await OwnerShop.find({ownerId: owner._id}).populate('shopId');
+    }
+    res.json(owners);
+  } catch (error) {
+    res.json({error:error.message});
+  }
+},
+//----------------------------------------Showing all Shops along owners embeded in it 
+getShopsWithOwners : async(req,res)=>{
+  try {
+    const shops = await Shop.find().lean();
+    for(let shop of shops){
+      shop.owners = await OwnerShop.find({shopId : shop._id}).populate('ownerId');
+    }
+    res.json(shops);
+  } catch (error) {
+    res.json({error:error.message});
+  }
 }
-}
-export {
-    addOwner,
-    showOwners,
-    showSingleOwner,
-    showOwnerShops,
-    deleteOwner,
-    addShops,
-    showShops,
-    showSingleShop,
-    showShopOwners,
-    deleteShop,
-    addOwnerShopIds,
-    showOwnerShopIds
 }

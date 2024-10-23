@@ -1,32 +1,34 @@
 import express from 'express';
-import { addOwner, addOwnerShopIds, addShops, deleteOwner, deleteShop, showOwners, showOwnerShopIds, showOwnerShops, showShopOwners, showShops, showSingleOwner, showSingleShop } from "./controller.js"
+import cotroller from "./controller.js"
 const router = express();
 
 //-------------------------------------Owners_Routing
-router.post('/owners',addOwner);
+router.post('/owners',cotroller.addOwner);
 
-router.get('/owners',showOwners);
+router.get('/owners', cotroller.showOwners);
 
-router.get('/owners/:ownerId', showSingleOwner);
+router.get('/owners/:ownerId', cotroller.showSingleOwner);
 
-router.get('/owners/:ownerId/shops',showOwnerShops);
+router.get('/owners/:ownerId/shops',cotroller.showOwnerShops);
 
-router.delete('/owners/:ownerId',deleteOwner);
+router.delete('/owners/:ownerId',cotroller.deleteOwner);
 
 //-------------------------------------Shops_Routing
-router.post('/shops',addShops);
+router.post('/shops',cotroller.addShops);
 
-router.get('/shops',showShops);
+router.get('/shops',cotroller.showShops);
 
-router.get('/shops/:shopId',showSingleShop);
+router.get('/shops/:shopId',cotroller.showSingleShop);
 
-router.get('/shops/:shopId/owners',showShopOwners);
+router.get('/shops/:shopId/owners',cotroller.showShopOwners);
 
-router.delete('/shops/:shopId',deleteShop);
+router.delete('/shops/:shopId',cotroller.deleteShop);
 
 //-------------------------------------Junction Schema
-router.post('/links',addOwnerShopIds);
+router.post('/buy',cotroller.purchaseShop);
 
-router.get('/links',showOwnerShopIds);
+router.get('/ownershops',cotroller.getOwnersWithShops);
+
+router.get('/shopowners',cotroller.getShopsWithOwners);
 
 export default router;
